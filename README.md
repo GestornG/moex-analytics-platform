@@ -17,7 +17,7 @@
 Настроено локальное окружение разработки и запущен PostgreSQL
 в Docker-контейнере.
 
-## Источники исходных данныъ.
+## Источники исходных данных
 ### MOEX:
 https://iss.moex.com/iss/reference/
 https://moexapi.tech-order.ru/all_companies
