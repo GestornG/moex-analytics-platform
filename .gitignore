@@ -16,5 +16,5 @@ __pycache__/
 data/
 
 # Файлы с исследовательскими загрузками
-notebooks/scratch.ipynb
-notebooks/Test.ipynb
+notebooks/01_source_research/scratch.ipynb
+notebooks/01_source_research/Test.ipynb
