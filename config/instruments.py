@@ -29,6 +29,9 @@ SELECTED_SECURITIES: dict[str, str] = {
     "AQUA": "ИНАРКТИКА",
 }
 
+# Основной режим торгов выбранных акций
+SECURITY_BOARD = "TQBR"
+
 
 # Рыночный и отраслевые индексы
 SELECTED_INDICES: dict[str, str] = {
@@ -48,10 +51,6 @@ INDEX_BOARDS: dict[str, str] = {
     "MOEXIT": "RTSI",
     "MOEXMM": "SNDX",
 }
-
-
-# Основной режим торгов выбранных акций
-SECURITY_BOARD = "TQBR"
 
 
 # Валюты Банка России
