@@ -5,9 +5,11 @@
 как единый источник состава данных для загрузки и обработки.
 """
 
+from datetime import date
+
 # Заданный период данных для проекта
-HISTORY_DATE_FROM = "2020-01-01"
-HISTORY_DATE_TO = "2020-12-31"
+HISTORY_DATE_FROM = date(2020, 1, 1)
+HISTORY_DATE_TO = date(2020, 12, 31)
 
 # MOEX: акции
 SELECTED_SECURITIES: dict[str, str] = {
