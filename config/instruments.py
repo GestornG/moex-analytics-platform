@@ -1,9 +1,13 @@
 """
-Утверждённый набор инструментов используемый в проекте.
+Утверждённый набор параметров используемый в проекте.
 
 Конфигурация сформирована на исследовательском этапе и используется
 как единый источник состава данных для загрузки и обработки.
 """
+
+# Заданный период данных для проекта
+HISTORY_DATE_FROM = "2020-01-01"
+HISTORY_DATE_TO = "2020-12-31"
 
 # MOEX: акции
 SELECTED_SECURITIES: dict[str, str] = {
@@ -32,7 +36,6 @@ SELECTED_SECURITIES: dict[str, str] = {
 # Основной режим торгов выбранных акций
 SECURITY_BOARD = "TQBR"
 
-
 # Рыночный и отраслевые индексы
 SELECTED_INDICES: dict[str, str] = {
     "IMOEX": "Индекс МосБиржи",
@@ -42,7 +45,6 @@ SELECTED_INDICES: dict[str, str] = {
     "MOEXMM": "Индекс МосБиржи металлов и добычи",
 }
 
-
 # Режимы торгов для получения истории индексов
 INDEX_BOARDS: dict[str, str] = {
     "IMOEX": "SNDX",
@@ -51,7 +53,6 @@ INDEX_BOARDS: dict[str, str] = {
     "MOEXIT": "RTSI",
     "MOEXMM": "SNDX",
 }
-
 
 # Валюты Банка России
 CBR_CURRENCIES: dict[str, str] = {
