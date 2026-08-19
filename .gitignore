@@ -18,3 +18,9 @@ data/
 # Файлы с исследовательскими загрузками
 notebooks/01_source_research/scratch.ipynb
 notebooks/01_source_research/Test.ipynb
+
+# Метаданные Python-пакета, создаваемые при установке проекта
+/src/moex_analytics_platform.egg-info/
+
+# Логи приложения
+/logs/
