@@ -21,7 +21,8 @@ UPSERT_SECURITIES_SQL = """
         reg_number,
         currency_code,
         security_type_code,
-        list_level
+        list_level,
+        prev_date
     )
     VALUES (
         %(secid)s,
@@ -35,7 +36,9 @@ UPSERT_SECURITIES_SQL = """
         %(reg_number)s,
         %(currency_code)s,
         %(security_type_code)s,
-        %(list_level)s
+        %(list_level)s,
+        %(prev_date)s
+
     )
     ON CONFLICT (secid)
     DO UPDATE SET
@@ -49,7 +52,8 @@ UPSERT_SECURITIES_SQL = """
         reg_number = EXCLUDED.reg_number,
         currency_code = EXCLUDED.currency_code,
         security_type_code = EXCLUDED.security_type_code,
-        list_level = EXCLUDED.list_level;
+        list_level = EXCLUDED.list_level,
+        prev_date = EXCLUDED.prev_date;
 """
 
 

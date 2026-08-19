@@ -29,6 +29,7 @@ SECURITY_COLUMN_MAP = {
     "CURRENCYID": "currency_code",
     "SECTYPE": "security_type_code",
     "LISTLEVEL": "list_level",
+    "PREVDATE": "prev_date",
 }
 
 
@@ -49,6 +50,7 @@ def transform_security_data(df: pd.DataFrame) -> pd.DataFrame:
 
     df["issue_size"] = df["issue_size"].astype("Int64")
     df["list_level"] = df["list_level"].astype("Int64")
+    df["prev_date"] = pd.to_datetime(df["prev_date"]).dt.date
     return df
 
 
