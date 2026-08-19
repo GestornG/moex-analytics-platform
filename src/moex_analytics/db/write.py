@@ -57,6 +57,27 @@ UPSERT_SECURITIES_SQL = """
 """
 
 
+UPSERT_INDICES_SQL = """
+    INSERT INTO dwh.index(
+        index_code,
+        short_name,
+        analytics_from,
+        analytics_till
+    )
+    VALUES (
+        %(index_code)s,
+        %(short_name)s,
+        %(analytics_from)s,
+        %(analytics_till)s
+    )
+    ON CONFLICT (index_code)
+    DO UPDATE SET
+        short_name = EXCLUDED.short_name,
+        analytics_from = EXCLUDED.analytics_from,
+        analytics_till = EXCLUDED.analytics_till
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -69,3 +90,18 @@ def upsert_securities(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.security", len(rows))
+    return
+
+
+def upsert_index(rows: list[dict[str, object]]) -> None:
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.index")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_INDICES_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.index", len(rows))
+    return
