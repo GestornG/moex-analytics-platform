@@ -6,11 +6,15 @@ ETL-процесс загрузки справочника акций в dwh.sec
 в слой PostgreSQL.
 """
 
+import logging
+
 import pandas as pd
 
 from moex_analytics.api.moex import get_list_shares
 from moex_analytics.db.write import upsert_securities
 from moex_analytics.settings import SECURITY_BOARD, SELECTED_SECURITIES
+
+logger = logging.getLogger(__name__)
 
 SECURITY_COLUMN_MAP = {
     "SECID": "secid",
@@ -61,15 +65,14 @@ def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
 
 def load_security() -> None:
     """Загружает и актуализирует справочник акций в dwh.security."""
+    logger.info("Начата загрузка справочника акций dwh.security")
     df = get_security_data(
         secids=set(SELECTED_SECURITIES),
         board=SECURITY_BOARD,
     )
     df = transform_security_data(df)
     df = df.astype(object).where(pd.notna(df), None)
-
     rows = dataframe_to_rows(df)
-
     upsert_securities(rows)
 
 

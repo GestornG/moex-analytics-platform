@@ -2,7 +2,11 @@
 Операции записи данных ETL в PostgreSQL DWH.
 """
 
+import logging
+
 from moex_analytics.db.connection import get_connection
+
+logger = logging.getLogger(__name__)
 
 UPSERT_SECURITIES_SQL = """
     INSERT INTO dwh.security (
@@ -54,8 +58,10 @@ def upsert_securities(rows: list[dict[str, object]]) -> None:
     if not rows:
         return
 
+    logger.debug("Начата запись в dwh.security")
     with get_connection() as connection, connection.cursor() as cursor:
         cursor.executemany(
             UPSERT_SECURITIES_SQL,
             rows,
         )
+    logger.debug("Записано %d строк в dwh.security", len(rows))
