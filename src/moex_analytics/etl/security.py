@@ -10,7 +10,7 @@ import logging
 
 import pandas as pd
 
-from moex_analytics.api.moex import get_list_shares
+from moex_analytics.api.moex import get_stok_security
 from moex_analytics.db.write import upsert_securities
 from moex_analytics.settings import SECURITY_BOARD, SELECTED_SECURITIES
 
@@ -35,7 +35,7 @@ SECURITY_COLUMN_MAP = {
 
 def get_security_data(secids: set, board: str) -> pd.DataFrame:
     """Возвращает в табличном виде справочник акций из MOEX ISS."""
-    data = get_list_shares(board=board)
+    data = get_stok_security(board=board)
     df = pd.DataFrame(
         columns=data["securities"]["columns"], data=data["securities"]["data"]
     )
@@ -76,6 +76,7 @@ def load_security() -> None:
     df = df.astype(object).where(pd.notna(df), None)
     rows = dataframe_to_rows(df)
     upsert_securities(rows)
+    logger.info("Завершена загрузка справочника акций dwh.security")
 
 
 if __name__ == "__main__":
