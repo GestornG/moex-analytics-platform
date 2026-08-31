@@ -10,7 +10,7 @@ import logging
 
 import pandas as pd
 
-from moex_analytics.api.moex import get_stok_security
+from moex_analytics.api.moex import get_stock_security
 from moex_analytics.db.write import upsert_securities
 from moex_analytics.settings import SECURITY_BOARD, SELECTED_SECURITIES
 
@@ -35,7 +35,7 @@ SECURITY_COLUMN_MAP = {
 
 def get_security_data(secids: set, board: str) -> pd.DataFrame:
     """Возвращает в табличном виде справочник акций из MOEX ISS."""
-    data = get_stok_security(board=board)
+    data = get_stock_security(board=board)
     df = pd.DataFrame(
         columns=data["securities"]["columns"], data=data["securities"]["data"]
     )

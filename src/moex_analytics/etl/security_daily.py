@@ -1,5 +1,5 @@
 """
-ETL-процесс загрузки справочника акций в dwh.security_daily.
+ETL-процесс загрузки дневной истории акций в dwh.security_daily.
 
 Получае данные торгов MOEX за день по выбранному списку торгов из scope проекта,
 преобразует к модели DWH и передаёт подготовленные данные
@@ -7,6 +7,7 @@ ETL-процесс загрузки справочника акций в dwh.sec
 """
 
 import logging
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -148,6 +149,7 @@ def get_security_daily_moex_data(
                 break
 
             params["start"] += cursor["PAGESIZE"]
+            time.sleep(0.2)
 
     return pd.concat(dfs_range_security, ignore_index=True)
 

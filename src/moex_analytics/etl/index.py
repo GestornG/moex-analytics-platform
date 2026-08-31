@@ -10,7 +10,7 @@ import logging
 
 import pandas as pd
 
-from moex_analytics.api.moex import get_stok_index
+from moex_analytics.api.moex import get_stock_index
 from moex_analytics.db.write import upsert_index
 from moex_analytics.settings import SELECTED_INDICES
 
@@ -26,7 +26,7 @@ INDEX_MAP = {
 
 def get_index_datad() -> pd.DataFrame:
     """Возвращает в табличном виде справочник индексов из MOEX ISS."""
-    data = get_stok_index()
+    data = get_stock_index()
     df = pd.DataFrame(
         columns=data["indices"]["columns"],
         data=data["indices"]["data"],
