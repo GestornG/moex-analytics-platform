@@ -4,7 +4,7 @@ from psycopg.rows import dict_row
 
 from moex_analytics.db.connection import get_connection
 
-SECURITY_DAILY = """
+SECURITY_DAILY_RANGE = """
 SELECT
     s.security_id,
     s.secid,
@@ -13,6 +13,7 @@ SELECT
 FROM dwh.security AS s
 LEFT JOIN dwh.security_daily AS sd
     ON sd.security_id = s.security_id
+WHERE s.secid = ANY(%s)
 GROUP BY
     s.security_id,
     s.secid
@@ -26,8 +27,17 @@ def get_securitys_from_db():
     return {secid for (secid,) in rows}
 
 
-def get_security_daily_date_range() -> list[dict[str, Any]]:
-    with get_connection() as connection:
-        with connection.cursor(row_factory=dict_row) as cursor:
-            rows = cursor.execute(SECURITY_DAILY).fetchall()
+def get_security_daily_date_range(security: list[str]) -> list[dict[str, Any]]:
+    """Возвращает перечень акций по списку и указывает диапазон дат."""
+    if not security:
+        return []
+
+    with (
+        get_connection() as connection,
+        connection.cursor(row_factory=dict_row) as cursor,
+    ):
+        rows = cursor.execute(
+            SECURITY_DAILY_RANGE,
+            (security,),
+        ).fetchall()
     return rows

@@ -49,7 +49,7 @@ def get_available_moex_date_range() -> dict[str, dict[str, Any]]:
     return dict_range
 
 
-def get_loaded_data_range_db() -> list[tuple[int, str, date, date]]:
+def get_security_daily_load_ranges() -> list[tuple[int, str, date, date]]:
     """Для каждой акции подготавливаются необходимые к выгрузке диапазоны дат.
     Диапазоны расчитываются на основе периода:
         указанного в настройках проекта,
@@ -63,7 +63,7 @@ def get_loaded_data_range_db() -> list[tuple[int, str, date, date]]:
         дата окончания периода
     )."""
 
-    db_rows = get_security_daily_date_range()
+    db_rows = get_security_daily_date_range(list(SELECTED_SECURITIES))
     moex_dict = get_available_moex_date_range()
 
     logger.debug("Доступные интервалы в MOEX: %s", moex_dict)
@@ -115,6 +115,7 @@ def get_security_daily_moex_data(
         params = {
             "from": date.strftime(date_from, format="%Y-%m-%d"),
             "till": date.strftime(date_to, format="%Y-%m-%d"),
+            "tradingsession": 3,
             "start": 0,
         }
         while True:
@@ -177,7 +178,7 @@ def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
 
 def load_security_daily() -> None:
     logger.info("Начата выгрузка данных для dwh.security_daily")
-    securities_list = get_loaded_data_range_db()
+    securities_list = get_security_daily_load_ranges()
 
     if not securities_list:
         logger.info("Новых интервалов не обнаружено")
@@ -188,12 +189,11 @@ def load_security_daily() -> None:
         )
 
     df = get_security_daily_moex_data(securities_list)
-    logger.info("Получены .json данные по дневным торгам")
+    logger.info("Получены данные по дневным торгам")
     df = transform_data(df)
     rows = dataframe_to_rows(df)
     upsert_security_daily(rows)
     logger.info("Выгрузка данных для dwh.security_daily завершена")
-    return
 
 
 if __name__ == "__main__":
