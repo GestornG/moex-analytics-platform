@@ -36,7 +36,7 @@ def get_json(
         raise
 
 
-def get_stok_security(
+def get_stock_security(
     engine: str = "stock", market: str = "shares", board: str = "TQBR"
 ) -> dict[str, Any]:
     """Выгрузить справочник акций по указанным параметрам."""
@@ -47,7 +47,7 @@ def get_stok_security(
     return get_json(url)
 
 
-def get_stok_index() -> dict[str, Any]:
+def get_stock_index() -> dict[str, Any]:
     """Выгрузить справочник индексов фондового рынка."""
     url = (
         "https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics.json"
@@ -73,9 +73,21 @@ def get_security_daily_history(
     board: str = "TQBR",
 ) -> dict[str, Any]:
     """Для заданных диапазонов дат выгружает дневную историю торгов по акции в указанном режиме торгов.
-
-    params: содержит словарь параметров с указанием периода
+    params: содержит словарь параметров с указанием периода.
     """
-
     url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/boards/{board}/securities/{security}.json"
     return get_json(url, params=params)
+
+
+def get_index_daily_history(
+    index: str,
+    board: str,
+    params: dict[str, Any],
+    engine: str = "stock",
+    market: str = "index",
+) -> dict[str, Any]:
+    """По заданному диапазону выгружает дневную историю торгов по индексам в указанном режиме торгов.
+    params: содержит словарь параметров с указанием периода.
+    """
+    url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/boards/{board}/securities/{index}.json"
+    return get_json(url=url, params=params)
