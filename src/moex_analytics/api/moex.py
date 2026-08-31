@@ -48,8 +48,34 @@ def get_stok_security(
 
 
 def get_stok_index() -> dict[str, Any]:
-    """Выгрузить справочник индексов."""
+    """Выгрузить справочник индексов фондового рынка."""
     url = (
         "https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics.json"
     )
     return get_json(url)
+
+
+def get_available_date_range(
+    security: str,
+    engine: str = "stock",
+    market: str = "shares",
+) -> dict[str, Any]:
+    """Получить интервал дат, доступных в истории для рынка по заданному режиму торгов."""
+    url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/securities/{security}/dates.json"
+    return get_json(url)
+
+
+def get_security_daily_history(
+    security: str,
+    params: dict[str, Any],
+    engine: str = "stock",
+    market: str = "shares",
+    board: str = "TQBR",
+) -> dict[str, Any]:
+    """Для заданных диапазонов дат выгружает дневную историю торгов по акции в указанном режиме торгов.
+
+    params: содержит словарь параметров с указанием периода
+    """
+
+    url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/boards/{board}/securities/{security}.json"
+    return get_json(url, params=params)

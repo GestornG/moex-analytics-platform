@@ -78,6 +78,44 @@ UPSERT_INDICES_SQL = """
 """
 
 
+UPSERT_SECURITY_DAILY_SQL = """
+    INSERT INTO dwh.security_daily (
+        security_id,
+        trade_date,
+        num_trades,
+        value,
+        open,
+        low,
+        high,
+        waprice,
+        close,
+        volume
+    )
+    VALUES (
+        %(security_id)s,
+        %(trade_date)s,
+        %(num_trades)s,
+        %(value)s,
+        %(open)s,
+        %(low)s,
+        %(high)s,
+        %(waprice)s,
+        %(close)s,
+        %(volume)s
+    )
+    ON CONFLICT (security_id, trade_date)
+    DO UPDATE SET
+        num_trades = EXCLUDED.num_trades,
+        value = EXCLUDED.value,
+        open = EXCLUDED.open,
+        low = EXCLUDED.low,
+        high = EXCLUDED.high,
+        waprice = EXCLUDED.waprice,
+        close = EXCLUDED.close,
+        volume = EXCLUDED.volume;
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -105,3 +143,25 @@ def upsert_index(rows: list[dict[str, object]]) -> None:
         )
     logger.debug("Записано %d строк в dwh.index", len(rows))
     return
+
+
+def upsert_security_daily(rows: list[dict[str, object]]) -> None:
+    """Добавляет и актуализирует дневную историю торгов акций."""
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.security_daily")
+
+    with (
+        get_connection() as connection,
+        connection.cursor() as cursor,
+    ):
+        cursor.executemany(
+            UPSERT_SECURITY_DAILY_SQL,
+            rows,
+        )
+
+    logger.debug(
+        "Записано %d строк в dwh.security_daily",
+        len(rows),
+    )
