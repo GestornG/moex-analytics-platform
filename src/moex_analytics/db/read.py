@@ -45,6 +45,45 @@ GROUP BY
 """
 
 
+CANDLE_1M_RANGE = """
+WITH candle_range AS (
+    SELECT
+        index_id,
+        security_id,
+        MIN(begin_ts)::date AS min_date,
+        MAX(begin_ts)::date AS max_date
+    FROM dwh.candle_1m
+    GROUP BY
+        index_id,
+        security_id
+)
+
+SELECT
+    'index' as instrument_type,
+    i.index_id as instrument_id,
+    i.index_code as instrument_name,
+    c.min_date,
+    c.max_date
+FROM dwh.index AS i
+LEFT JOIN candle_range AS c
+    ON i.index_id = c.index_id
+WHERE i.index_code = ANY(%s)
+
+UNION ALL
+
+SELECT
+    'security' as instrument_type,
+    s.security_id as instrument_id,
+    s.secid as instrument_name,
+    c.min_date,
+    c.max_date
+FROM dwh.security AS s
+LEFT JOIN candle_range AS c
+    ON s.security_id = c.security_id
+WHERE s.secid = ANY(%s);
+"""
+
+
 def get_securitys_from_db():
     """Возвращает перечень уникальных наименований акций из таблицы dwh.security."""
     with get_connection() as connection:
@@ -102,4 +141,25 @@ def get_index_daily_date_range(index_id: list[int]) -> list[dict[str, Any]]:
             INDEX_DAILY_RANGE,
             (index_id,),
         ).fetchall()
+    return rows
+
+
+def get_candle_1m_range(index: list[str], security: list[str]) -> list[dict[str, Any]]:
+    """
+    Из таблицы dwh.candle_1m по заданному списку выгружает пару минимальное и
+    максимальное время свечей в таблице для каждого индекса/акции.
+    """
+
+    if not index and not security:
+        return []
+
+    with (
+        get_connection() as connection,
+        connection.cursor(row_factory=dict_row) as cursor,
+    ):
+        rows = cursor.execute(
+            CANDLE_1M_RANGE,
+            (index, security),
+        ).fetchall()
+
     return rows

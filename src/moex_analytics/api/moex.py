@@ -9,8 +9,24 @@ import logging
 from typing import Any
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
+
+retry = Retry(
+    total=3,
+    backoff_factor=1,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET"],
+)
+
+session = requests.Session()
+
+session.mount(
+    "https://",
+    HTTPAdapter(max_retries=retry),
+)
 
 
 def get_json(
@@ -23,7 +39,9 @@ def get_json(
             url,
             params,
         )
-        response = requests.get(url=url, timeout=timeout, params=params)
+        # response = requests.get(url=url, timeout=timeout, params=params)
+        response = session.get(url=url, timeout=timeout, params=params)
+
         response.raise_for_status()
         return response.json()
 
@@ -61,7 +79,10 @@ def get_available_date_range(
     market: str = "shares",
 ) -> dict[str, Any]:
     """Получить интервал дат, доступных в истории для рынка по заданному режиму торгов."""
-    url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/securities/{security}/dates.json"
+    url = (
+        f"https://iss.moex.com/iss/history/engines/{engine}"
+        f"/markets/{market}/securities/{security}/dates.json"
+    )
     return get_json(url)
 
 
@@ -75,7 +96,10 @@ def get_security_daily_history(
     """Для заданных диапазонов дат выгружает дневную историю торгов по акции в указанном режиме торгов.
     params: содержит словарь параметров с указанием периода.
     """
-    url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/boards/{board}/securities/{security}.json"
+    url = (
+        f"https://iss.moex.com/iss/history/engines/{engine}"
+        f"/markets/{market}/boards/{board}/securities/{security}.json"
+    )
     return get_json(url, params=params)
 
 
@@ -87,7 +111,45 @@ def get_index_daily_history(
     market: str = "index",
 ) -> dict[str, Any]:
     """По заданному диапазону выгружает дневную историю торгов по индексам в указанном режиме торгов.
-    params: содержит словарь параметров с указанием периода.
+    params: содержит словарь параметров с указанием периодов.
     """
-    url = f"https://iss.moex.com/iss/history/engines/{engine}/markets/{market}/boards/{board}/securities/{index}.json"
+    url = (
+        f"https://iss.moex.com/iss/history/engines/{engine}"
+        f"/markets/{market}/boards/{board}/securities/{index}.json"
+    )
+    return get_json(url=url, params=params)
+
+
+def get_available_candle_range(
+    security: str,
+    board: str,
+    market: str,
+    engine: str = "stock",
+) -> dict[str, Any]:
+    """По указанным параметрам выгружает период доступных свечей."""
+    url = (
+        f"https://iss.moex.com/iss/engines/{engine}/markets/{market}"
+        f"/boards/{board}/securities/{security}/candleborders.json"
+    )
+    return get_json(url=url)
+
+
+def get_candle_1м(
+    market: str,
+    board: str,
+    security: str,
+    params: dict[str, Any],
+    engine: str = "stock",
+) -> dict[str, Any]:
+    """Для заданного периода выгружает минутные свечи по указанному инструменту.
+    params:
+        "interval": указывает группу выгружаемых данных. 1 - минутные свечи,
+        "from": дата начала периода,
+        "till": дата окончания периода,
+        "start": указывает строку с которой нужно начать выгрузку (для пагинации)"""
+
+    url = (
+        f"https://iss.moex.com/iss/engines/{engine}/markets/{market}"
+        f"/boards/{board}/securities/{security}/candles.json"
+    )
     return get_json(url=url, params=params)

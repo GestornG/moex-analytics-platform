@@ -151,6 +151,82 @@ UPSERT_INDEX_DAILY_SQL = """
 """
 
 
+UPSERT_INDEX_CANDLE_1M_SQL = """
+    INSERT INTO dwh.candle_1m (
+        index_id,
+        security_id,
+        begin_ts,
+        end_ts,
+        open,
+        close,
+        high,
+        low,
+        value,
+        volume
+    )
+    VALUES (
+        %(index_id)s,
+        %(security_id)s,
+        %(begin_ts)s,
+        %(end_ts)s,
+        %(open)s,
+        %(close)s,
+        %(high)s,
+        %(low)s,
+        %(value)s,
+        %(volume)s
+    )
+    ON CONFLICT (index_id, begin_ts)
+    WHERE index_id IS NOT NULL
+    DO UPDATE SET
+        end_ts = EXCLUDED.end_ts,
+        open = EXCLUDED.open,
+        close = EXCLUDED.close,
+        high = EXCLUDED.high,
+        low = EXCLUDED.low,
+        value = EXCLUDED.value,
+        volume = EXCLUDED.volume;
+"""
+
+
+UPSERT_SECURITY_CANDLE_1M_SQL = """
+    INSERT INTO dwh.candle_1m (
+        index_id,
+        security_id,
+        begin_ts,
+        end_ts,
+        open,
+        close,
+        high,
+        low,
+        value,
+        volume
+    )
+    VALUES (
+        %(index_id)s,
+        %(security_id)s,
+        %(begin_ts)s,
+        %(end_ts)s,
+        %(open)s,
+        %(close)s,
+        %(high)s,
+        %(low)s,
+        %(value)s,
+        %(volume)s
+    )
+    ON CONFLICT (security_id, begin_ts)
+    WHERE security_id IS NOT NULL
+    DO UPDATE SET
+        end_ts = EXCLUDED.end_ts,
+        open = EXCLUDED.open,
+        close = EXCLUDED.close,
+        high = EXCLUDED.high,
+        low = EXCLUDED.low,
+        value = EXCLUDED.value,
+        volume = EXCLUDED.volume;
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -222,3 +298,38 @@ def upsert_index_daily(rows: list[dict[str, object]]) -> None:
         "Записано %d строк в dwh.index_daily",
         len(rows),
     )
+
+
+def upsert_candle_1m(
+    rows_index: list[dict[str, object]] | None,
+    rows_security: list[dict[str, object]] | None,
+) -> None:
+    """Добавляет и актуализирует данные по минутным свечам.
+    Обновление происходит отдельно для индексов и для акций"""
+    logger.debug("Запись в dwh.candle_1m")
+
+    with (
+        get_connection() as connection,
+        connection.cursor() as cursor,
+    ):
+        if rows_index:
+            cursor.executemany(
+                UPSERT_INDEX_CANDLE_1M_SQL,
+                rows_index,
+            )
+
+            logger.debug(
+                "Индексы. Записано %d строк в dwh.candle_1m",
+                len(rows_index),
+            )
+
+        if rows_security:
+            cursor.executemany(
+                UPSERT_SECURITY_CANDLE_1M_SQL,
+                rows_security,
+            )
+
+            logger.debug(
+                "Акции. Записано %d строк в dwh.candle_1m",
+                len(rows_security),
+            )
