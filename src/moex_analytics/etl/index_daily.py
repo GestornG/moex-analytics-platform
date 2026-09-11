@@ -52,6 +52,8 @@ def get_index_daily_load_ranges() -> list[tuple[int, str, date, date]]:
     logger.debug("Интервалы из dwh.index_daily: %s", db_rows)
 
     load_ranges: list[tuple[int, str, date, date]] = []
+    # list[(index_id, index_code, min_date, max_date)]
+
     for row in db_rows:
         index_id = row["index_id"]
         index_code = db_index[index_id]["index_code"]
@@ -143,6 +145,9 @@ def get_index_daily_moex_data(
             params["start"] += cursor["PAGESIZE"]
             time.sleep(0.2)
 
+    if not dfs_range_index:
+        return pd.DataFrame()
+
     return pd.concat(dfs_range_index, ignore_index=True)
 
 
@@ -180,6 +185,10 @@ def load_index_daily() -> None:
     logger.info("Получен список индексов и диапазонов для загрузки: %s", indices_list)
 
     df = get_index_daily_moex_data(indices_list)
+    if df.empty:
+        logger.info("Данные по рассчитанным диапазонам отсутствуют")
+        return
+
     logger.info("Получены данные по дневным торгам")
     df = transform_data(df)
     rows = dataframe_to_rows(df)

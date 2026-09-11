@@ -1,7 +1,7 @@
 """
 ETL-процесс загрузки дневной истории акций в dwh.security_daily.
 
-Получае данные торгов MOEX за день по выбранному списку торгов из scope проекта,
+Получает данные торгов MOEX за день по выбранному списку торгов из scope проекта,
 преобразует к модели DWH и передаёт подготовленные данные
 в слой PostgreSQL.
 """
@@ -56,7 +56,7 @@ def get_security_daily_load_ranges() -> list[tuple[int, str, date, date]]:
         указанного в настройках проекта,
         достуного в данных ISS MOEX,
         уже загруженных в БД.
-    На оснвое недостяющих периодов и строится диапазон в формате:
+    На основе недостяющих периодов и строится диапазон в формате:
     (
         ID акции в БД,
         Краткое наименование акции,
@@ -71,6 +71,8 @@ def get_security_daily_load_ranges() -> list[tuple[int, str, date, date]]:
     logger.debug("Интервалы из БД: %s", db_rows)
 
     load_ranges: list[tuple[int, str, date, date]] = []
+    # list[(security_id, secid, min_date, max_date)]
+
     for row in db_rows:
         secid = row["secid"]
         security_id = row["security_id"]
@@ -151,6 +153,9 @@ def get_security_daily_moex_data(
             params["start"] += cursor["PAGESIZE"]
             time.sleep(0.2)
 
+    if not dfs_range_security:
+        return pd.DataFrame()
+
     return pd.concat(dfs_range_security, ignore_index=True)
 
 
@@ -191,6 +196,10 @@ def load_security_daily() -> None:
         )
 
     df = get_security_daily_moex_data(securities_list)
+    if df.empty:
+        logger.info("Данные по рассчитанным диапазонам отсутствуют")
+        return
+
     logger.info("Получены данные по дневным торгам")
     df = transform_data(df)
     rows = dataframe_to_rows(df)
