@@ -1,7 +1,7 @@
 """
 ETL-процесс загрузки минутных свечей акций и индексов в dwh.candle_1m
 
-Получает данные торгов MOEX за одну минуту работы по списку акций и ндексов получаемых
+Получает данные торгов MOEX за одну минуту работы по списку акций и индексов получаемых
 из scope проекта. Преобразует к модели DWH и передаёт подготовленные данные в
 слой PostgreSQL.
 """
@@ -13,7 +13,7 @@ from typing import Any
 
 import pandas as pd
 
-from moex_analytics.api.moex import get_available_candle_range, get_candle_1м
+from moex_analytics.api.moex import get_available_candle_range, get_candle_1m
 from moex_analytics.db.read import get_candle_1m_range
 from moex_analytics.db.write import upsert_candle_1m
 from moex_analytics.logging_config import setup_logging
@@ -27,6 +27,13 @@ from moex_analytics.settings import (
 
 logger = logging.getLogger(__name__)
 
+type CandleLoadingRange = tuple[
+    str,  # instrument_type
+    int,  # instrument_id
+    str,  # instrument_name
+    date,  # date_from
+    date,  # date_to
+]
 
 COLUMNS_NAME = {
     "begin": "begin_ts",
@@ -39,6 +46,8 @@ COLUMNS_NAME = {
     "volume": "volume",
 }
 
+CANDLE_CHUNK_DAYS = 30
+
 
 def get_candle_interval(response: dict[str, Any]) -> tuple:
     """Из диапазонов доступности свечей MOEX ISS вычленяет начало и
@@ -46,12 +55,13 @@ def get_candle_interval(response: dict[str, Any]) -> tuple:
     Возвращает:
         Кортеж (начало, конец)"""
     columns = response["borders"]["columns"]
+    begin_idx = columns.index("begin")
+    end_idx = columns.index("end")
     interval_idx = columns.index("interval")
 
-    begin, end, _ = next(
-        row for row in response["borders"]["data"] if row[interval_idx] == 1
-    )
-    return begin, end
+    row = next(row for row in response["borders"]["data"] if row[interval_idx] == 1)
+
+    return row[begin_idx], row[end_idx]
 
 
 def get_available_moex_range():
@@ -59,7 +69,7 @@ def get_available_moex_range():
     Возвращает:
         Словарь доступности минутных свечей: {акция/индекс: (начало, конец),}
     """
-    available_range: dict[str, tuple] = {}
+    available_range: dict[str, Any] = {}
 
     for security in list(SELECTED_SECURITIES.keys()):
         response = get_available_candle_range(
@@ -83,7 +93,7 @@ def get_available_moex_range():
 def calculate_missing_ranges(
     target_from: date, target_to: date, date_min: date | None, date_max: date | None
 ) -> list[tuple[date, date]]:
-    """Расчитывает интервалы дат, за которые нужно догрузить информацию по свечам для
+    """Рассчитывает интервалы дат, за которые нужно догрузить информацию по свечам для
     каждой акции/индекса
     Возвращает:
         Список с кортежами, где кортеж содержит дату начала и дату
@@ -104,19 +114,19 @@ def calculate_missing_ranges(
         return [(target_from, target_to)]
 
     if target_from < date_min:
-        ranges.append((target_from, date_min - timedelta(days=1)))
+        ranges.append((target_from, date_min))
 
     if target_to > date_max:
-        ranges.append((date_max + timedelta(days=1), target_to))
+        ranges.append((date_max, target_to))
     return ranges
 
 
-def get_candle_loading_interval() -> list[tuple[str, int, str, date, date]]:
-    """На основе данных хранящихся в БД, периодом заданным проектом и доступными
-    данными по свечам_1м в moex iss рассчитываются для каждого инструмента периоды
+def get_candle_loading_interval() -> list[CandleLoadingRange]:
+    """На основе данных хранящихся в БД, периодом, заданным проектом и доступными
+    данными по свечам_1м в MOEX ISS рассчитываются для каждого инструмента периоды
     для которых необходимо догрузить данные.
     Возвращает:
-        Список кортежей для выгрузки свеч по индексам и акциям в формате:
+        Список кортежей для выгрузки свечей по индексам и акциям в формате:
         list[(type, id, name, min_date, max_date)].
     """
     moex_range = get_available_moex_range()
@@ -124,8 +134,8 @@ def get_candle_loading_interval() -> list[tuple[str, int, str, date, date]]:
         list(SELECTED_INDICES.keys()), list(SELECTED_SECURITIES.keys())
     )
 
-    loading_instrument_range: list[tuple[str, int, str, date, date]] = []
-    # list[(type, id, name, min_date, max_date)]
+    loading_instrument_range: list[CandleLoadingRange] = []
+    # list[(type_instr, id, name, min_date, max_date)]
 
     for row in db_rows:
         name = row["instrument_name"]
@@ -150,12 +160,12 @@ def get_candle_loading_interval() -> list[tuple[str, int, str, date, date]]:
     return loading_instrument_range
 
 
-def download_with_pagiantion(
+def download_with_pagination(
     board: str, inst_name: str, market: str, date_from: date, date_to: date
 ) -> pd.DataFrame:
     """
-    Для каждого инструмента формирует цикл выгрузки минутных свечей по итервалу.
-    Пагинация обрабатыватывается по количеству выгруженных строк, до тех пор,
+    Для каждого инструмента формирует цикл выгрузки минутных свечей по интервалу.
+    Пагинация обрабатывается по количеству выгруженных строк, до тех пор,
     пока данные не перестанут выгружаться (api вернет 0 строк данных).
     Возвращает:
         Таблицу (pd.DataFrame) с минутными свечами по инструменты + инервалу.
@@ -164,19 +174,19 @@ def download_with_pagiantion(
 
     params = {
         "interval": 1,
-        "from": date.strftime(date_from, format="%Y-%m-%d"),
-        "till": date.strftime(date_to, format="%Y-%m-%d"),
+        "from": date_from.strftime(format="%Y-%m-%d"),
+        "till": date_to.strftime(format="%Y-%m-%d"),
         "start": 0,
     }
 
     dfs_list: list[pd.DataFrame] = []
     while True:
-        response = get_candle_1м(
+        response = get_candle_1m(
             market=market, board=board, security=inst_name, params=params
         )
 
-        rows_count = response["candles"]["data"]
-        if not rows_count:
+        rows = response["candles"]["data"]
+        if not rows:
             break
 
         df = pd.DataFrame(
@@ -185,8 +195,8 @@ def download_with_pagiantion(
 
         dfs_list.append(df)
 
-        params["start"] += len(rows_count)
-        time.sleep(0.3)
+        params["start"] += len(rows)
+        time.sleep(0.2)
 
     if not dfs_list:
         return pd.DataFrame()
@@ -194,55 +204,90 @@ def download_with_pagiantion(
     return pd.concat(dfs_list, ignore_index=True)
 
 
+def get_candle_loading_chunks(
+    loading_ranges: list[CandleLoadingRange],
+    chunk_days: int,
+) -> list[CandleLoadingRange]:
+    """Для каждого "инструмент + диапазон" разбивает загрузки свечей на чанки по датам.
+    Возвращает:
+        Список кортежей по инструментам с разбитыми диапазонами."""
+    if chunk_days <= 0:
+        raise ValueError("chunk_days должен быть больше 0")
+
+    loading_chunks = []
+
+    for (
+        instrument_type,
+        instrument_id,
+        instrument_name,
+        date_from,
+        date_to,
+    ) in loading_ranges:
+        chunk_from = date_from
+
+        while chunk_from <= date_to:
+            chunk_to = min(
+                chunk_from + timedelta(days=chunk_days - 1),
+                date_to,
+            )
+
+            loading_chunks.append(
+                (
+                    instrument_type,
+                    instrument_id,
+                    instrument_name,
+                    chunk_from,
+                    chunk_to,
+                )
+            )
+
+            chunk_from = chunk_to + timedelta(days=1)
+
+    return loading_chunks
+
+
 def get_candle_moex_data(
-    instrument_range: list[tuple[str, int, str, date, date]],
+    row: CandleLoadingRange,
 ) -> pd.DataFrame:
     """Готовит, передает параметры для выгрузки минутных свечей для акций и индексов.
-    Получает pd.DateFrame минутных свечей по каждому инструменты за указанный период.
+    Получает pd.DataFrame минутных свечей по инструменту за указанный период.
     Возвращает:
-    Общий pd.DateFrame минутных свечей по всем инструментам.
+        Общий pd.DataFrame минутных свечей.
     """
-    dfs_candles: list[pd.DataFrame] = []
-    for row in instrument_range:
-        inst_type, inst_id, inst_name, date_from, date_to = row
 
-        if inst_type == "index":
-            instrument_df = download_with_pagiantion(
-                board=SELECTED_INDICES[inst_name]["board"],
-                inst_name=inst_name,
-                market="index",
-                date_from=date_from,
-                date_to=date_to,
-            )
-            if instrument_df.empty:
-                continue
+    inst_type, inst_id, inst_name, date_from, date_to = row
 
-            instrument_df["index_id"] = inst_id
-            instrument_df["security_id"] = None
+    if inst_type == "index":
+        board = SELECTED_INDICES[inst_name]["board"]
+        market = "index"
+    elif inst_type == "security":
+        board = SECURITY_BOARD
+        market = "shares"
+    else:
+        raise ValueError(f"Unknown instrument type: {inst_type}")
 
-        else:
-            instrument_df = download_with_pagiantion(
-                board=SECURITY_BOARD,
-                inst_name=inst_name,
-                market="shares",
-                date_from=date_from,
-                date_to=date_to,
-            )
-            if instrument_df.empty:
-                continue
+    instrument_df = download_with_pagination(
+        board=board,
+        inst_name=inst_name,
+        market=market,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
-            instrument_df["security_id"] = inst_id
-            instrument_df["index_id"] = None
-
-        dfs_candles.append(instrument_df)
-
-    if not dfs_candles:
+    if instrument_df.empty:
         return pd.DataFrame()
 
-    return pd.concat(dfs_candles, ignore_index=True)
+    if inst_type == "index":
+        instrument_df["index_id"] = inst_id
+        instrument_df["security_id"] = None
+    else:
+        instrument_df["security_id"] = inst_id
+        instrument_df["index_id"] = None
+
+    return instrument_df
 
 
-def transfor_date(df: pd.DataFrame) -> pd.DataFrame:
+def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     """Преобразует данные MOEX к структуре dwh.candle_1m."""
     df = df[["index_id", "security_id"] + list(COLUMNS_NAME.keys())]
     df = df.rename(columns=COLUMNS_NAME)
@@ -251,8 +296,6 @@ def transfor_date(df: pd.DataFrame) -> pd.DataFrame:
     df["index_id"] = df["index_id"].astype("Int64")
     df["begin_ts"] = pd.to_datetime(df["begin_ts"])
     df["end_ts"] = pd.to_datetime(df["end_ts"])
-
-    df = df.astype(object).where(pd.notna(df), None)
     return df
 
 
@@ -261,36 +304,13 @@ def dataframe_to_rows(
 ) -> list[dict[str, object]]:
     """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
     columns = [str(column) for column in df.columns]
+    df = df.astype(object).where(pd.notna(df), None)
 
     rows: list[dict[str, object]] = []
     for values in df.itertuples(index=False, name=None):
         row = dict(zip(columns, values))
         rows.append(row)
     return rows
-
-
-def separation_dataframe(
-    df: pd.DataFrame,
-) -> tuple[
-    list[dict[str, object]],
-    list[dict[str, object]],
-]:
-    """Разделяет данные на два массива по акциям и индексам для отдельной
-    загрузки в БД.
-    Возвращает:
-        Два массива строк для по каждой групе, если данных по группе нет - None"""
-    index: list[dict[str, object]]
-    security: list[dict[str, object]]
-
-    df_index = df[df["index_id"].notnull()].copy()
-    df_security = df[df["security_id"].notnull()].copy()
-
-    index = dataframe_to_rows(df_index)
-    security = dataframe_to_rows(df_security)
-
-    logger.info("К загрузке %d строк по минутным свечам индексов", len(index))
-    logger.info("К загрузке %d строк по минутным свечам акций", len(security))
-    return index, security
 
 
 def load_candle_1m() -> None:
@@ -300,24 +320,47 @@ def load_candle_1m() -> None:
     if not loading_interval:
         logger.info("Новых интервалов не обнаружено")
         return
-    else:
+
+    logger.info(
+        "Рассчитано %d диапазонов загрузки",
+        len(loading_interval),
+    )
+    logger.debug("Диапазоны загрузки: %s", loading_interval)
+
+    loading_chunks = get_candle_loading_chunks(loading_interval, CANDLE_CHUNK_DAYS)
+
+    for chunk in loading_chunks:
+        inst_type, _, inst_name, date_from, date_to = chunk
+
         logger.info(
-            "Получен список инструментов и диапазонов для загрузки: %s",
-            loading_interval,
+            "Загрузка %s: %s — %s",
+            inst_name,
+            date_from,
+            date_to,
         )
+        df = get_candle_moex_data(chunk)
+        if df.empty:
+            logger.info(
+                "Данные отсутствуют: %s, %s — %s",
+                inst_name,
+                date_from,
+                date_to,
+            )
+            continue
 
-    df = get_candle_moex_data(loading_interval)
-    if df.empty:
-        logger.info("Данные по рассчитанным диапазонам отсутствуют")
-        return
-
-    df = transfor_date(df)
-
-    index, security = separation_dataframe(df)
-    upsert_candle_1m(index, security)
-    return
+        df = transform_data(df)
+        rows = dataframe_to_rows(df)
+        upsert_candle_1m(rows, inst_type)
+        logger.info(
+            "Загружено %d свечей: %s, %s — %s",
+            len(rows),
+            inst_name,
+            date_from,
+            date_to,
+        )
 
 
 if __name__ == "__main__":
     setup_logging()
     load_candle_1m()
+    logger.info("Загрузка dwh.candle_1m завершена")

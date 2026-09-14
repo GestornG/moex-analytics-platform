@@ -300,36 +300,29 @@ def upsert_index_daily(rows: list[dict[str, object]]) -> None:
     )
 
 
-def upsert_candle_1m(
-    rows_index: list[dict[str, object]] | None,
-    rows_security: list[dict[str, object]] | None,
-) -> None:
-    """Добавляет и актуализирует данные по минутным свечам.
-    Обновление происходит отдельно для индексов и для акций"""
-    logger.debug("Запись в dwh.candle_1m")
+def upsert_candle_1m(rows: list[dict[str, object]], instrument_type: str) -> None:
+    """Добавляет и актуализирует данные по минутным свечам."""
+
+    if not rows:
+        return
+
+    if instrument_type == "index":
+        sql = UPSERT_INDEX_CANDLE_1M_SQL
+    elif instrument_type == "security":
+        sql = UPSERT_SECURITY_CANDLE_1M_SQL
+    else:
+        raise ValueError(f"Unknown instrument type: {instrument_type}")
+
+    logger.debug("Начата запись в dwh.candle_1m")
 
     with (
         get_connection() as connection,
         connection.cursor() as cursor,
     ):
-        if rows_index:
-            cursor.executemany(
-                UPSERT_INDEX_CANDLE_1M_SQL,
-                rows_index,
-            )
+        cursor.executemany(sql, rows)
 
-            logger.debug(
-                "Индексы. Записано %d строк в dwh.candle_1m",
-                len(rows_index),
-            )
-
-        if rows_security:
-            cursor.executemany(
-                UPSERT_SECURITY_CANDLE_1M_SQL,
-                rows_security,
-            )
-
-            logger.debug(
-                "Акции. Записано %d строк в dwh.candle_1m",
-                len(rows_security),
-            )
+    logger.debug(
+        "%s. Записано %d строк в dwh.candle_1m",
+        instrument_type,
+        len(rows),
+    )

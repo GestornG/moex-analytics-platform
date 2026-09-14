@@ -134,7 +134,7 @@ def get_available_candle_range(
     return get_json(url=url)
 
 
-def get_candle_1м(
+def get_candle_1m(
     market: str,
     board: str,
     security: str,
