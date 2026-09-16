@@ -153,3 +153,9 @@ def get_candle_1m(
         f"/boards/{board}/securities/{security}/candles.json"
     )
     return get_json(url=url, params=params)
+
+
+def get_splits() -> dict[str, Any]:
+    """Выгрузить справочник дроблений и консолидаций бумаг фондового рынка."""
+    url = "https://iss.moex.com/iss/statistics/engines/stock/splits.json"
+    return get_json(url)

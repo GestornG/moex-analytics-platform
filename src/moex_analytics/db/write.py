@@ -227,6 +227,26 @@ UPSERT_SECURITY_CANDLE_1M_SQL = """
 """
 
 
+UPSERT_SPLIT_SQL = """
+    INSERT INTO dwh.split(
+        security_id,
+        trade_date,
+        ratio_before,
+        ratio_after
+    )
+    VALUES (
+        %(security_id)s,
+        %(trade_date)s,
+        %(ratio_before)s,
+        %(ratio_after)s
+    )
+    ON CONFLICT (security_id, trade_date)
+    DO UPDATE SET
+        ratio_before = EXCLUDED.ratio_before,
+        ratio_after = EXCLUDED.ratio_after
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -326,3 +346,18 @@ def upsert_candle_1m(rows: list[dict[str, object]], instrument_type: str) -> Non
         instrument_type,
         len(rows),
     )
+
+
+def upsert_split(rows: list[dict[str, object]]) -> None:
+    """Добавляет и актуализирует данные по дроблению и сплтиу акций."""
+
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.split")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_SPLIT_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.split", len(rows))
