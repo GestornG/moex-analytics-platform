@@ -413,7 +413,7 @@ MOEX ISS. ISS предоставляет отдельные методы ана�
 
 Endpoint:
 
-`/iss/statistics/engines/stock/markets/index/analytics/{INDEXID}/tickers/{SECID}.json`
+`/iss/statistics/engines/stock/markets/index/analytics/{INDEXID}/tickers.json`
 
 **Scope:**
 Загружается информация по выбранным индексам проекта и акциям, присутствующим в справочнике `security`.
@@ -439,8 +439,6 @@ Endpoint:
 
 **Особенности:**
 Таблица хранит именно историю состава индексов, а не ежедневный снимок.
-
-Поля текущих аналитических показателей `CURRENTVALUE`, `LASTCHANGEPRC` и `LASTCHANGE` в неё не включаются.
 
 Значение `TILL` пока сохраняется в том виде, в котором его предоставляет MOEX. Его точную трактовку для текущего периода отдельно проверим перед реализацией ETL.
 
