@@ -93,6 +93,15 @@ WHERE
     secid = ANY(%s)
 """
 
+INDEX_IDS = """
+SELECT
+    index_code,
+    index_id
+FROM dwh.index
+WHERE
+    index_code = ANY(%s)
+"""
+
 
 def get_securitys_from_db():
     """Возвращает перечень уникальных наименований акций из таблицы dwh.security."""
@@ -176,7 +185,7 @@ def get_candle_1m_range(index: list[str], security: list[str]) -> list[dict[str,
 
 
 def get_security_ids(securities: list[str]) -> dict[str, int]:
-    """Возвращает соответствие secid → security_id."""
+    """Возвращает соответствие secid → security_id из dwh.security"""
     if not securities:
         return {}
 
@@ -190,3 +199,20 @@ def get_security_ids(securities: list[str]) -> dict[str, int]:
         ).fetchall()
 
     return {row["secid"]: row["security_id"] for row in rows}
+
+
+def get_index_ids(indices: list[str]) -> dict[str, int]:
+    """Возвращает соответствие index_code → index_id из dwh.index."""
+    if not indices:
+        return {}
+
+    with (
+        get_connection() as connection,
+        connection.cursor(row_factory=dict_row) as cursor,
+    ):
+        rows = cursor.execute(
+            INDEX_IDS,
+            (indices,),
+        ).fetchall()
+
+    return {row["index_code"]: row["index_id"] for row in rows}

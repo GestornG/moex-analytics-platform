@@ -247,6 +247,25 @@ UPSERT_SPLIT_SQL = """
 """
 
 
+UPSERT_INDEX_COMPOSITION_SQL = """
+    INSERT INTO dwh.index_composition (
+        index_id,
+        security_id,
+        date_from,
+        date_till
+    )
+    VALUES (
+        %(index_id)s,
+        %(security_id)s,
+        %(date_from)s,
+        %(date_till)s
+    )
+    ON CONFLICT (index_id, security_id, date_from)
+    DO UPDATE SET
+        date_till = EXCLUDED.date_till
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -361,3 +380,17 @@ def upsert_split(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.split", len(rows))
+
+
+def upsert_index_composition(rows: list[dict[str, object]]) -> None:
+    """Добавляет и актуализирует данные по составу индексов."""
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.index_composition")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_INDEX_COMPOSITION_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.index_composition", len(rows))

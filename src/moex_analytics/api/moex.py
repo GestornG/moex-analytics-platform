@@ -159,3 +159,12 @@ def get_splits() -> dict[str, Any]:
     """Выгрузить справочник дроблений и консолидаций бумаг фондового рынка."""
     url = "https://iss.moex.com/iss/statistics/engines/stock/splits.json"
     return get_json(url)
+
+
+def get_index_composition(index: str) -> dict[str, Any]:
+    """Выгружает исторические периоды участия бумаг в указанном индексе."""
+    url = (
+        "https://iss.moex.com/iss/statistics/engines/stock/markets/"
+        f"index/analytics/{index}/tickers.json"
+    )
+    return get_json(url)
