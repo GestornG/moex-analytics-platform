@@ -266,6 +266,33 @@ UPSERT_INDEX_COMPOSITION_SQL = """
 """
 
 
+UPSERT_CURRENCY_SQL = """
+    INSERT INTO dwh.currency (
+        cbr_id,
+        name,
+        eng_name,
+        nominal,
+        iso_num_code,
+        iso_char_code
+    )
+    VALUES (
+        %(cbr_id)s,
+        %(name)s,
+        %(eng_name)s,
+        %(nominal)s,
+        %(iso_num_code)s,
+        %(iso_char_code)s
+    )
+    ON CONFLICT (cbr_id)
+    DO UPDATE SET
+        name = EXCLUDED.name,
+        eng_name = EXCLUDED.eng_name,
+        nominal = EXCLUDED.nominal,
+        iso_num_code = EXCLUDED.iso_num_code,
+        iso_char_code = EXCLUDED.iso_char_code
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -394,3 +421,17 @@ def upsert_index_composition(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.index_composition", len(rows))
+
+
+def upsert_currency(rows: list[dict[str, object]]) -> None:
+    """Актцализация справочника валют ЦБ dwh.currency"""
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.currency")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_CURRENCY_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.currency", len(rows))
