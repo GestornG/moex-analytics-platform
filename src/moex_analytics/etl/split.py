@@ -87,7 +87,7 @@ def load_split() -> None:
     logger.info("Начата выгрузка данных для dwh.split")
     df = get_split()
     if df.empty:
-        logger.info("Даные по сплиту/дроблению отсутствуют")
+        logger.info("Данные по составу индексов отсутствуют.")
         return
 
     df = transform_data(df)
