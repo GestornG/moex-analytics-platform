@@ -24,6 +24,7 @@ retry = Retry(
 session = requests.Session()
 adapter = HTTPAdapter(max_retries=retry)
 session.mount("http://", adapter)
+session.mount("https://", adapter)
 
 
 def get_xml(url: str, timeout: int = 30, params: dict[str, Any] | None = None) -> bytes:
@@ -49,6 +50,12 @@ def get_xml(url: str, timeout: int = 30, params: dict[str, Any] | None = None) -
 
 
 def get_currency_cb() -> bytes:
-    """Добавляет и актуализирует справочник валют ЦБ."""
+    """Выгружает данные по справочнику валют ЦБ."""
     url = "http://www.cbr.ru/scripts/XML_valFull.asp"
     return get_xml(url)
+
+
+def get_currency_rate(params: dict[str, str]) -> bytes:
+    """Выгружает динамику котировок по валюте за период."""
+    url = "https://www.cbr.ru/scripts/XML_dynamic.asp"
+    return get_xml(url=url, params=params)

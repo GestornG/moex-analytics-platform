@@ -19,7 +19,6 @@ GROUP BY
     s.secid
 """
 
-
 INDEX_CATALOGUE = """
 SELECT
     index_id,
@@ -29,7 +28,6 @@ SELECT
 FROM dwh.index
 WHERE index_code = ANY(%s)
 """
-
 
 INDEX_DAILY_RANGE = """
 SELECT
@@ -43,7 +41,6 @@ WHERE i.index_id = ANY(%s)
 GROUP BY
     i.index_id
 """
-
 
 CANDLE_1M_RANGE = """
 WITH candle_range AS (
@@ -83,7 +80,6 @@ LEFT JOIN candle_range AS c
 WHERE s.secid = ANY(%s);
 """
 
-
 SECURITY_IDS = """
 SELECT
     secid,
@@ -100,6 +96,21 @@ SELECT
 FROM dwh.index
 WHERE
     index_code = ANY(%s)
+"""
+
+CURRENCY_RATE_RANGE = """
+SELECT
+    c.currency_id,
+    c.cbr_id,
+    MIN(cr.rate_date) AS date_from,
+    MAX(cr.rate_date) AS date_to
+FROM dwh.currency AS c
+LEFT JOIN dwh.currency_rate AS cr
+    ON c.currency_id = cr.currency_id
+WHERE c.cbr_id = ANY(%s)
+GROUP BY
+    c.currency_id,
+    c.cbr_id;
 """
 
 
@@ -216,3 +227,29 @@ def get_index_ids(indices: list[str]) -> dict[str, int]:
         ).fetchall()
 
     return {row["index_code"]: row["index_id"] for row in rows}
+
+
+def get_currency_rate_range(cbr_ids: list[str]) -> dict[str, dict]:
+    """Возвращает соответствия cbr_id → {currency_id, date_from, date_to} из dwh.currency_rate."""
+    if not cbr_ids:
+        return {}
+
+    with (
+        get_connection() as connection,
+        connection.cursor(row_factory=dict_row) as cursor,
+    ):
+        rows = cursor.execute(
+            CURRENCY_RATE_RANGE,
+            (cbr_ids,),
+        ).fetchall()
+
+    currency_ranges = {}
+
+    for row in rows:
+        currency_ranges[row["cbr_id"]] = {
+            "currency_id": row["currency_id"],
+            "date_from": row["date_from"],
+            "date_to": row["date_to"],
+        }
+
+    return currency_ranges

@@ -293,6 +293,29 @@ UPSERT_CURRENCY_SQL = """
 """
 
 
+UPSERT_CURRENCY_RATE_SQL = """
+    INSERT INTO dwh.currency_rate (
+        currency_id,
+        rate_date,
+        nominal,
+        rate_value,
+        unit_rate
+    )
+    VALUES (
+        %(currency_id)s,
+        %(rate_date)s,
+        %(nominal)s,
+        %(rate_value)s,
+        %(unit_rate)s
+    )
+    ON CONFLICT (currency_id, rate_date)
+    DO UPDATE SET
+        nominal = EXCLUDED.nominal,
+        rate_value = EXCLUDED.rate_value,
+        unit_rate = EXCLUDED.unit_rate
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -435,3 +458,17 @@ def upsert_currency(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.currency", len(rows))
+
+
+def upsert_currency_rate(rows: list[dict[str, object]]) -> None:
+    """Актцализация справочника валют ЦБ dwh.currency_rate"""
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.currency_rate")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_CURRENCY_RATE_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.currency_rate", len(rows))
