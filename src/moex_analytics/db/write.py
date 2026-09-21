@@ -316,6 +316,21 @@ UPSERT_CURRENCY_RATE_SQL = """
 """
 
 
+UPSERT_KEY_RATE_SQL = """
+    INSERT INTO dwh.key_rate(
+        rate_date,
+        rate
+    )
+    VALUES (
+        %(rate_date)s,
+        %(rate)s
+    )
+    ON CONFLICT (rate_date)
+    DO UPDATE SET
+        rate = EXCLUDED.rate
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -447,7 +462,7 @@ def upsert_index_composition(rows: list[dict[str, object]]) -> None:
 
 
 def upsert_currency(rows: list[dict[str, object]]) -> None:
-    """Актцализация справочника валют ЦБ dwh.currency"""
+    """Актуализация справочника валют ЦБ dwh.currency"""
     if not rows:
         return
 
@@ -461,7 +476,7 @@ def upsert_currency(rows: list[dict[str, object]]) -> None:
 
 
 def upsert_currency_rate(rows: list[dict[str, object]]) -> None:
-    """Актцализация справочника валют ЦБ dwh.currency_rate"""
+    """Актуализация справочника валют ЦБ dwh.currency_rate"""
     if not rows:
         return
 
@@ -472,3 +487,17 @@ def upsert_currency_rate(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.currency_rate", len(rows))
+
+
+def upsert_key_rate(rows: list[dict[str, object]]) -> None:
+    "Добавляет и актуализирует историю ключевой ставки ЦБ."
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.key_rate")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_KEY_RATE_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.key_rate", len(rows))
