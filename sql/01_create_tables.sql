@@ -38,13 +38,14 @@ CREATE TABLE dwh.index (
 -- Справочник дат
 CREATE TABLE dwh.calendar (
     calendar_date DATE NOT NULL,
-    period INTEGER NOT NULL,
-    year SMALLINT NOT NULL,
-    quarter SMALLINT NOT NULL,
-    month_name TEXT NOT NULL,
+    "period" INTEGER NOT NULL,
+    "year" SMALLINT NOT NULL,
+    "quarter" SMALLINT NOT NULL,
     month_num SMALLINT NOT NULL,
+    month_name TEXT NOT NULL,
     day_of_month SMALLINT NOT NULL,
     day_of_week SMALLINT NOT NULL,
+    day_of_week_name TEXT NOT NULL,
 
     CONSTRAINT pk_calendar PRIMARY KEY (calendar_date)
 );
