@@ -331,6 +331,42 @@ UPSERT_KEY_RATE_SQL = """
 """
 
 
+UPSERT_CALENDAR_SQL = """
+    INSERT INTO dwh.calendar(
+        calendar_date,
+        period,
+        year,
+        quarter,
+        month_name,
+        month_num,
+        day_of_month,
+        day_of_week,
+        day_of_week_name
+    )
+    VALUES (
+        %(calendar_date)s,
+        %(period)s,
+        %(year)s,
+        %(quarter)s,
+        %(month_name)s,
+        %(month_num)s,
+        %(day_of_month)s,
+        %(day_of_week)s,
+        %(day_of_week_name)s
+    )
+    ON CONFLICT (calendar_date)
+    DO UPDATE SET
+        period = EXCLUDED.period,
+        year = EXCLUDED.year,
+        quarter = EXCLUDED.quarter,
+        month_name = EXCLUDED.month_name,
+        month_num = EXCLUDED.month_num,
+        day_of_month = EXCLUDED.day_of_month,
+        day_of_week = EXCLUDED.day_of_week,
+        day_of_week_name = EXCLUDED.day_of_week_name;
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -501,3 +537,17 @@ def upsert_key_rate(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.key_rate", len(rows))
+
+
+def upsert_calendar(rows: list[dict[str, object]]) -> None:
+    "Добавляет и актуализирует данные dwh.calendar."
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.calendar")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_CALENDAR_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.calendar", len(rows))
