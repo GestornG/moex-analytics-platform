@@ -24,3 +24,6 @@ notebooks/01_source_research/Test.ipynb
 
 # Логи приложения
 /logs/
+
+# Файл для тестов ETL процессов
+src/moex_analytics/etl/test.ipynb
