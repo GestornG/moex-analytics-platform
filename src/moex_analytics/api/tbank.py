@@ -85,7 +85,6 @@ def find_instrument(isin: str) -> dict[str, Any]:
     payload = {
         "query": isin,
         "instrumentKind": "INSTRUMENT_TYPE_SHARE",
-        "apiTradeAvailableFlag": True,
     }
 
     return post_json(endpoint=endpoint, payload=payload)
@@ -97,12 +96,11 @@ def get_dividends(instrument_uid: str, date_from: str, date_to: str) -> dict[str
         instrument_uid - технический уникальный ID инструмента у T-Bank.
         date_from | date_to - период за который выгружаются дивиденды.
     """
-
     endpoint = "tinkoff.public.invest.api.contract.v1.InstrumentsService/GetDividends"
     payload = {
         "from": date_from,
         "to": date_to,
-        "instrumentId": instrument_uid,
+        "instrumentId": str(instrument_uid),
     }
     return post_json(endpoint=endpoint, payload=payload)
 
@@ -121,13 +119,3 @@ def check_t_invest_token() -> bool:
             "T-Invest token недействителен. Загрузка T-Invest данных будет пропущена."
         )
         return False
-
-
-# if __name__ == "__main__":
-#     setup_logging()
-#     # print(check_t_invest_token())
-#     print(find_instrument("RU0009024277")["instruments"][0]["uid"])
-
-
-# from_ts = f"{date_from}T00:00:00Z"
-# to_ts = f"{date_to}T23:59:59Z"

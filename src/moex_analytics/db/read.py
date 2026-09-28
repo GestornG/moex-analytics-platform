@@ -113,6 +113,16 @@ GROUP BY
     c.cbr_id;
 """
 
+SECURITY_TBANK_UIDS = """
+SELECT
+    security_id,
+    tbank_uid
+FROM dwh.security
+WHERE
+    secid = ANY(%s)
+    AND tbank_uid IS NOT NULL
+"""
+
 
 def get_securitys_from_db():
     """Возвращает перечень уникальных наименований акций из таблицы dwh.security."""
@@ -253,3 +263,20 @@ def get_currency_rate_range(cbr_ids: list[str]) -> dict[str, dict]:
         }
 
     return currency_ranges
+
+
+def get_security_tbank_uids(securities: list[str]) -> dict[int, str]:
+    """Возвращает соответствие security_id → tbank_uid из dwh.security"""
+    if not securities:
+        return {}
+
+    with (
+        get_connection() as connection,
+        connection.cursor(row_factory=dict_row) as cursor,
+    ):
+        rows = cursor.execute(
+            SECURITY_TBANK_UIDS,
+            (securities,),
+        ).fetchall()
+
+    return {row["security_id"]: row["tbank_uid"] for row in rows}

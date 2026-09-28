@@ -370,6 +370,26 @@ UPSERT_CALENDAR_SQL = """
 """
 
 
+UPSERT_DIVIDEND_SQL = """
+    INSERT INTO dwh.dividend(
+        security_id,
+        registry_close_date,
+        dividend_value,
+        currency_code
+    )
+    VALUES (
+        %(security_id)s,
+        %(registry_close_date)s,
+        %(dividend_value)s,
+        %(currency_code)s
+    )
+    ON CONFLICT (security_id, registry_close_date)
+    DO UPDATE SET
+        dividend_value = EXCLUDED.dividend_value,
+        currency_code = EXCLUDED.currency_code;
+"""
+
+
 def upsert_securities(rows: list[dict[str, object]]) -> None:
     """Добавляет новые акции и актуализирует существующие."""
     if not rows:
@@ -554,3 +574,17 @@ def upsert_calendar(rows: list[dict[str, object]]) -> None:
             rows,
         )
     logger.debug("Записано %d строк в dwh.calendar", len(rows))
+
+
+def upsert_dividend(rows: list[dict[str, object]]) -> None:
+    "Добавляет и актуализирует данные dwh.dividend."
+    if not rows:
+        return
+
+    logger.debug("Начата запись в dwh.dividend")
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.executemany(
+            UPSERT_DIVIDEND_SQL,
+            rows,
+        )
+    logger.debug("Записано %d строк в dwh.dividend", len(rows))
