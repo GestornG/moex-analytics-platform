@@ -15,6 +15,7 @@ import pandas as pd
 from moex_analytics.api.cb import get_currency_rate
 from moex_analytics.db.read import get_currency_rate_range
 from moex_analytics.db.write import upsert_currency_rate
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import CBR_CURRENCIES, HISTORY_DATE_FROM, HISTORY_DATE_TO
 
@@ -120,18 +121,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["rate_value"] = df["rate_value"].str.replace(",", ".", regex=False).astype(float)
     df["unit_rate"] = df["unit_rate"].str.replace(",", ".", regex=False).astype(float)
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    df = df.astype(object).where(pd.notna(df), None)
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_currency_rate() -> None:

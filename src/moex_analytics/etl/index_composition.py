@@ -14,6 +14,7 @@ import pandas as pd
 from moex_analytics.api.moex import get_index_composition
 from moex_analytics.db.read import get_index_ids, get_security_ids
 from moex_analytics.db.write import upsert_index_composition
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import SELECTED_INDICES, SELECTED_SECURITIES
 
@@ -79,18 +80,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["date_from"] = pd.to_datetime(df["date_from"]).dt.date
     df["date_till"] = pd.to_datetime(df["date_till"]).dt.date
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    df = df.astype(object).where(pd.notna(df), None)
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_index_composition() -> None:

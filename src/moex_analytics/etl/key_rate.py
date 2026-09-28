@@ -13,6 +13,7 @@ import pandas as pd
 
 from moex_analytics.api.cb import get_key_rate
 from moex_analytics.db.write import upsert_key_rate
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import HISTORY_DATE_FROM, HISTORY_DATE_TO
 
@@ -41,18 +42,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["rate_date"] = pd.to_datetime(df["rate_date"]).dt.date
     df["rate"] = pd.to_numeric(df["rate"])
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    df = df.astype(object).where(pd.notna(df), None)
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_key_rate() -> None:

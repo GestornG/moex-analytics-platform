@@ -13,6 +13,7 @@ import pandas as pd
 from moex_analytics.api.moex import get_stock_security
 from moex_analytics.api.tbank import find_instrument
 from moex_analytics.db.write import upsert_securities
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import SECURITY_BOARD, SELECTED_SECURITIES
 
@@ -81,18 +82,6 @@ def transform_security_data(df: pd.DataFrame) -> pd.DataFrame:
     df["list_level"] = df["list_level"].astype("Int64")
     df["prev_date"] = pd.to_datetime(df["prev_date"]).dt.date
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    columns = [str(column) for column in df.columns]
-    df = df.astype(object).where(pd.notna(df), None)
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_security(t_token_available: bool = True) -> None:

@@ -12,6 +12,7 @@ import pandas as pd
 
 from moex_analytics.api.moex import get_stock_index
 from moex_analytics.db.write import upsert_index
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.settings import SELECTED_INDICES
 
 logger = logging.getLogger(__name__)

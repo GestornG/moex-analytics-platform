@@ -13,6 +13,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 from moex_analytics.db.write import upsert_calendar
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import HISTORY_DATE_FROM, HISTORY_DATE_TO
 
@@ -66,18 +67,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["day_of_month"] = df["day_of_month"].astype("Int64")
     df["day_of_week"] = df["day_of_week"].astype("Int64")
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    df = df.astype(object).where(pd.notna(df), None)
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_calendar() -> None:

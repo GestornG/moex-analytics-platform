@@ -16,6 +16,7 @@ import pandas as pd
 from moex_analytics.api.moex import get_available_candle_range, get_candle_1m
 from moex_analytics.db.read import get_candle_1m_range
 from moex_analytics.db.write import upsert_candle_1m
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import (
     HISTORY_DATE_FROM,
@@ -297,20 +298,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["begin_ts"] = pd.to_datetime(df["begin_ts"])
     df["end_ts"] = pd.to_datetime(df["end_ts"])
     return df
-
-
-def dataframe_to_rows(
-    df: pd.DataFrame,
-) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    columns = [str(column) for column in df.columns]
-    df = df.astype(object).where(pd.notna(df), None)
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_candle_1m() -> None:

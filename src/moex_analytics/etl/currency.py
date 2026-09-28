@@ -13,6 +13,7 @@ import pandas as pd
 
 from moex_analytics.api.cb import get_currency_cb
 from moex_analytics.db.write import upsert_currency
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import CBR_CURRENCIES
 
@@ -65,18 +66,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["nominal"] = df["nominal"].astype("Int64")
     df["iso_num_code"] = df["iso_num_code"].astype("Int64")
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    df = df.astype(object).where(pd.notna(df), None)
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_currency() -> None:

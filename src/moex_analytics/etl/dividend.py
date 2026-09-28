@@ -13,6 +13,7 @@ import pandas as pd
 from moex_analytics.api.tbank import get_dividends
 from moex_analytics.db.read import get_security_tbank_uids
 from moex_analytics.db.write import upsert_dividend
+from moex_analytics.etl.common import dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import (
     HISTORY_DATE_FROM,
@@ -57,18 +58,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["security_id"] = df["security_id"].astype("Int64")
     df["registry_close_date"] = pd.to_datetime(df["registry_close_date"]).dt.date
     return df
-
-
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    df = df.astype(object).where(pd.notna(df), None)
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
 
 
 def load_dividend() -> None:
