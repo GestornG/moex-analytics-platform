@@ -27,6 +27,7 @@ security,CURRENCYID,"string, bytes=12",currency_code,text,—,YES,keep,Код в
 security,SECTYPE,"string, bytes=3",security_type_code,text,—,YES,keep,Код типа ценной бумаги MOEX,
 security,LISTLEVEL,int32,list_level,smallint,—,YES,keep,Уровень листинга бумаги,
 security,SETTLEDATE,date,—,—,—,—,drop,Текущая расчётная дата торгов,
+security,uid,—,tbank_uid,text,—,YES,keep,Технический уникальный ID инструмента у T-Bank,
 index,—,—,index_id,bigint,PK,NO,add,Внутренний идентификатор индекса в нашей БД,
 index,indexid,string:36,index_code,text,"BK, UQ",NO,keep,"Код индекса MOEX, например IMOEX, MOEXFN",
 index,shortname,string:765,short_name,text,—,NO,keep,Название индекса,

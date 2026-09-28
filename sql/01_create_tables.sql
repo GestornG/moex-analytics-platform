@@ -16,9 +16,11 @@ CREATE TABLE dwh.security (
     currency_code TEXT,
     security_type_code TEXT,
     list_level SMALLINT,
+    tbank_uid UUID,
 
     CONSTRAINT pk_security PRIMARY KEY (security_id),
-    CONSTRAINT uq_security_secid UNIQUE (secid)
+    CONSTRAINT uq_security_secid UNIQUE (secid)б
+    CONSTRAINT uq_security_tbank_uid UNIQUE (tbank_uid)
 );
 
 
