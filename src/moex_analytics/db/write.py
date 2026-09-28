@@ -9,7 +9,7 @@ from moex_analytics.db.connection import get_connection
 logger = logging.getLogger(__name__)
 
 UPSERT_SECURITIES_SQL = """
-    INSERT INTO dwh.security (
+    INSERT INTO dwh.security as s (
         secid,
         short_name,
         face_value,
@@ -22,7 +22,8 @@ UPSERT_SECURITIES_SQL = """
         currency_code,
         security_type_code,
         list_level,
-        prev_date
+        prev_date,
+        tbank_uid
     )
     VALUES (
         %(secid)s,
@@ -37,7 +38,8 @@ UPSERT_SECURITIES_SQL = """
         %(currency_code)s,
         %(security_type_code)s,
         %(list_level)s,
-        %(prev_date)s
+        %(prev_date)s,
+        %(tbank_uid)s
 
     )
     ON CONFLICT (secid)
@@ -53,7 +55,8 @@ UPSERT_SECURITIES_SQL = """
         currency_code = EXCLUDED.currency_code,
         security_type_code = EXCLUDED.security_type_code,
         list_level = EXCLUDED.list_level,
-        prev_date = EXCLUDED.prev_date;
+        prev_date = EXCLUDED.prev_date,
+        tbank_uid = COALESCE(EXCLUDED.tbank_uid, s.tbank_uid);
 """
 
 
