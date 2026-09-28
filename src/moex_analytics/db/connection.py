@@ -1,18 +1,19 @@
-import os
-
 import psycopg
-from dotenv import load_dotenv
 
-from moex_analytics.settings import PROJECT_ROOT
-
-load_dotenv(PROJECT_ROOT / ".env")
+from moex_analytics.settings import (
+    POSTGRES_DB,
+    POSTGRES_HOST,
+    POSTGRES_PASSWORD,
+    POSTGRES_PORT,
+    POSTGRES_USER,
+)
 
 
 def get_connection() -> psycopg.Connection:
     return psycopg.connect(
-        host=os.environ["POSTGRES_HOST"],
-        port=int(os.environ["POSTGRES_PORT"]),
-        dbname=os.environ["POSTGRES_DB"],
-        user=os.environ["POSTGRES_USER"],
-        password=os.environ["POSTGRES_PASSWORD"],
+        host=POSTGRES_HOST,
+        port=int(POSTGRES_PORT),
+        dbname=POSTGRES_DB,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
     )
