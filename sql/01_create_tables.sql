@@ -19,7 +19,7 @@ CREATE TABLE dwh.security (
     tbank_uid UUID,
 
     CONSTRAINT pk_security PRIMARY KEY (security_id),
-    CONSTRAINT uq_security_secid UNIQUE (secid)б
+    CONSTRAINT uq_security_secid UNIQUE (secid),
     CONSTRAINT uq_security_tbank_uid UNIQUE (tbank_uid)
 );
 

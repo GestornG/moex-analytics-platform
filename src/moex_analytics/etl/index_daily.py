@@ -110,9 +110,6 @@ def get_index_daily_moex_data(
             "tradingsession": 3,
             "start": 0,
         }
-        print(
-            f"index={index}, board={SELECTED_INDICES[index]['board']}, params={params}"
-        )
         while True:
             response = get_index_daily_history(
                 index=index, board=SELECTED_INDICES[index]["board"], params=params
