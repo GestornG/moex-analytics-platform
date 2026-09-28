@@ -45,17 +45,6 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def dataframe_to_rows(df: pd.DataFrame) -> list[dict[str, object]]:
-    """Преобразует DataFrame в строки для параметризованного SQL-запроса."""
-    columns = [str(column) for column in df.columns]
-
-    rows: list[dict[str, object]] = []
-    for values in df.itertuples(index=False, name=None):
-        row = dict(zip(columns, values))
-        rows.append(row)
-    return rows
-
-
 def load_indices() -> None:
     """Загружает и актуализирует справочник акций в dwh.index."""
     logger.info("Начата загрузка справочника акций dwh.index")
