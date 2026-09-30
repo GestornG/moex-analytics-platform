@@ -4,6 +4,8 @@
 
 import logging
 
+from psycopg.abc import Query
+
 from moex_analytics.db.connection import get_connection
 
 logger = logging.getLogger(__name__)
@@ -390,85 +392,58 @@ UPSERT_DIVIDEND_SQL = """
 """
 
 
-def upsert_securities(rows: list[dict[str, object]]) -> None:
-    """Добавляет новые акции и актуализирует существующие."""
+def writing_data_to_database(
+    rows: list[dict[str, object]], sql_query: Query, table_name: str
+) -> None:
+    """Записывает строки в базу данных.
+    Параметры:
+        rows - строки с данными,
+        sql_query - SQL запрос,
+        table_name - наименование таблицы, в которую происходит запись (для логов).
+    """
+
     if not rows:
         return
 
-    logger.debug("Начата запись в dwh.security")
+    logger.debug("Начата запись в %s", table_name)
     with get_connection() as connection, connection.cursor() as cursor:
         cursor.executemany(
-            UPSERT_SECURITIES_SQL,
+            sql_query,
             rows,
         )
-    logger.debug("Записано %d строк в dwh.security", len(rows))
-    return
+    logger.debug("Записано %d строк в %s", len(rows), table_name)
+
+
+def upsert_securities(rows: list[dict[str, object]]) -> None:
+    """Добавляет новые акции и актуализирует существующие."""
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_SECURITIES_SQL, table_name="dwh.security"
+    )
 
 
 def upsert_index(rows: list[dict[str, object]]) -> None:
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.index")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_INDICES_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.index", len(rows))
-    return
+    """Добавляет новые индексы и актуализирует существующие."""
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_INDICES_SQL, table_name="dwh.index"
+    )
 
 
 def upsert_security_daily(rows: list[dict[str, object]]) -> None:
     """Добавляет и актуализирует дневную историю торгов акций."""
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.security_daily")
-
-    with (
-        get_connection() as connection,
-        connection.cursor() as cursor,
-    ):
-        cursor.executemany(
-            UPSERT_SECURITY_DAILY_SQL,
-            rows,
-        )
-
-    logger.debug(
-        "Записано %d строк в dwh.security_daily",
-        len(rows),
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_SECURITY_DAILY_SQL, table_name="dwh.security_daily"
     )
 
 
 def upsert_index_daily(rows: list[dict[str, object]]) -> None:
     """Добавляет и актуализирует дневную историю торгов индексов."""
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.index_daily")
-
-    with (
-        get_connection() as connection,
-        connection.cursor() as cursor,
-    ):
-        cursor.executemany(
-            UPSERT_INDEX_DAILY_SQL,
-            rows,
-        )
-
-    logger.debug(
-        "Записано %d строк в dwh.index_daily",
-        len(rows),
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_INDEX_DAILY_SQL, table_name="dwh.index_daily"
     )
 
 
 def upsert_candle_1m(rows: list[dict[str, object]], instrument_type: str) -> None:
     """Добавляет и актуализирует данные по минутным свечам."""
-
-    if not rows:
-        return
-
     if instrument_type == "index":
         sql = UPSERT_INDEX_CANDLE_1M_SQL
     elif instrument_type == "security":
@@ -476,115 +451,59 @@ def upsert_candle_1m(rows: list[dict[str, object]], instrument_type: str) -> Non
     else:
         raise ValueError(f"Unknown instrument type: {instrument_type}")
 
-    logger.debug("Начата запись в dwh.candle_1m")
-
-    with (
-        get_connection() as connection,
-        connection.cursor() as cursor,
-    ):
-        cursor.executemany(sql, rows)
-
-    logger.debug(
-        "%s. Записано %d строк в dwh.candle_1m",
-        instrument_type,
-        len(rows),
+    writing_data_to_database(
+        rows=rows,
+        sql_query=sql,
+        table_name=f"dwh.candle_1m. Инструмент: {instrument_type}",
     )
 
 
 def upsert_split(rows: list[dict[str, object]]) -> None:
     """Добавляет и актуализирует данные по дроблению и сплтиу акций."""
-
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.split")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_SPLIT_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.split", len(rows))
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_SPLIT_SQL, table_name="dwh.split"
+    )
 
 
 def upsert_index_composition(rows: list[dict[str, object]]) -> None:
     """Добавляет и актуализирует данные по составу индексов."""
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.index_composition")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_INDEX_COMPOSITION_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.index_composition", len(rows))
+    writing_data_to_database(
+        rows=rows,
+        sql_query=UPSERT_INDEX_COMPOSITION_SQL,
+        table_name="dwh.index_composition",
+    )
 
 
 def upsert_currency(rows: list[dict[str, object]]) -> None:
     """Актуализация справочника валют ЦБ dwh.currency"""
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.currency")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_CURRENCY_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.currency", len(rows))
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_CURRENCY_SQL, table_name="dwh.currency"
+    )
 
 
 def upsert_currency_rate(rows: list[dict[str, object]]) -> None:
     """Актуализация справочника валют ЦБ dwh.currency_rate"""
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.currency_rate")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_CURRENCY_RATE_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.currency_rate", len(rows))
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_CURRENCY_RATE_SQL, table_name="dwh.currency_rate"
+    )
 
 
 def upsert_key_rate(rows: list[dict[str, object]]) -> None:
     "Добавляет и актуализирует историю ключевой ставки ЦБ."
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.key_rate")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_KEY_RATE_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.key_rate", len(rows))
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_KEY_RATE_SQL, table_name="dwh.key_rate"
+    )
 
 
 def upsert_calendar(rows: list[dict[str, object]]) -> None:
     "Добавляет и актуализирует данные dwh.calendar."
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.calendar")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_CALENDAR_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.calendar", len(rows))
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_CALENDAR_SQL, table_name="dwh.calendar"
+    )
 
 
 def upsert_dividend(rows: list[dict[str, object]]) -> None:
     "Добавляет и актуализирует данные dwh.dividend."
-    if not rows:
-        return
-
-    logger.debug("Начата запись в dwh.dividend")
-    with get_connection() as connection, connection.cursor() as cursor:
-        cursor.executemany(
-            UPSERT_DIVIDEND_SQL,
-            rows,
-        )
-    logger.debug("Записано %d строк в dwh.dividend", len(rows))
+    writing_data_to_database(
+        rows=rows, sql_query=UPSERT_DIVIDEND_SQL, table_name="dwh.dividend"
+    )
