@@ -144,14 +144,13 @@ def load_index_daily() -> None:
         logger.info("Новых интервалов не обнаружено")
         return
 
-    logger.info("Получен список индексов и диапазонов для загрузки: %s", indices_list)
+    logger.debug("Получен список индексов и диапазонов для загрузки: %s", indices_list)
 
     df = get_index_daily_moex_data(indices_list)
     if df.empty:
-        logger.info("Данные по рассчитанным диапазонам отсутствуют")
+        logger.warning("Данные по рассчитанным диапазонам отсутствуют")
         return
 
-    logger.info("Получены данные по дневным торгам")
     df = transform_data(df)
     rows = dataframe_to_rows(df)
     upsert_index_daily(rows)

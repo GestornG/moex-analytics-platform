@@ -166,14 +166,13 @@ def load_security_daily() -> None:
         logger.info("Новых интервалов не обнаружено")
         return
 
-    logger.info("Получен список акций и диапазонов для загрузки: %s", securities_list)
+    logger.debug("Получен список акций и диапазонов для загрузки: %s", securities_list)
 
     df = get_security_daily_moex_data(securities_list)
     if df.empty:
-        logger.info("Данные по рассчитанным диапазонам отсутствуют")
+        logger.warning("Данные по рассчитанным диапазонам отсутствуют")
         return
 
-    logger.info("Получены данные по дневным торгам")
     df = transform_data(df)
     rows = dataframe_to_rows(df)
     upsert_security_daily(rows)

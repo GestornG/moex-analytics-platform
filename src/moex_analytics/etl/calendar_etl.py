@@ -72,15 +72,15 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
 def load_calendar() -> None:
     date_range = checking_calendar_periods()
     if date_range is None:
-        logger.info("Текущий диапазон справочника dwh.calendar достаточен.")
+        logger.info("Текущий диапазон справочника dwh.calendar достаточен")
         return
 
-    logger.info("Начат процесс обновления dwh.calendar.")
+    logger.info("Начат процесс обновления dwh.calendar")
     df = get_dataframe_with_date(*date_range)
     df = transform_data(df)
     rows = dataframe_to_rows(df)
     upsert_calendar(rows)
-    logger.info("Завершен процесс обновления dwh.calendar.")
+    logger.info("Завершен процесс обновления dwh.calendar")
 
 
 if __name__ == "__main__":

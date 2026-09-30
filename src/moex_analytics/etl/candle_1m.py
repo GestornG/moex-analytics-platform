@@ -308,7 +308,7 @@ def load_candle_1m() -> None:
         logger.info("Новых интервалов не обнаружено")
         return
 
-    logger.info(
+    logger.debug(
         "Рассчитано %d диапазонов загрузки",
         len(loading_interval),
     )
@@ -319,7 +319,7 @@ def load_candle_1m() -> None:
     for chunk in loading_chunks:
         inst_type, _, inst_name, date_from, date_to = chunk
 
-        logger.info(
+        logger.debug(
             "Загрузка %s: %s — %s",
             inst_name,
             date_from,
@@ -327,7 +327,7 @@ def load_candle_1m() -> None:
         )
         df = get_candle_moex_data(chunk)
         if df.empty:
-            logger.info(
+            logger.debug(
                 "Данные отсутствуют: %s, %s — %s",
                 inst_name,
                 date_from,
@@ -345,9 +345,9 @@ def load_candle_1m() -> None:
             date_from,
             date_to,
         )
+    logger.info("Загрузка dwh.candle_1m завершена")
 
 
 if __name__ == "__main__":
     setup_logging()
     load_candle_1m()
-    logger.info("Загрузка dwh.candle_1m завершена")

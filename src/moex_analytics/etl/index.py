@@ -39,7 +39,7 @@ def get_index_data() -> pd.DataFrame:
 def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     """Преобразует данные MOEX к структуре dwh.index."""
     df = df[df["indexid"].isin(SELECTED_INDICES)]
-    df = df[list(SELECTED_INDICES.keys())]
+    df = df[list(INDEX_MAP.keys())]
     df = df.rename(columns=INDEX_MAP)
 
     df["analytics_from"] = pd.to_datetime(df["analytics_from"]).dt.date

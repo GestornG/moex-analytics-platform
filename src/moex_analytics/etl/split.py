@@ -76,7 +76,7 @@ def load_split() -> None:
     logger.info("Начата выгрузка данных для dwh.split")
     df = get_split()
     if df.empty:
-        logger.info("Данные по составу индексов отсутствуют.")
+        logger.info("Данные по дроблению/обьединению акций отсутствют")
         return
 
     df = transform_data(df)
