@@ -36,7 +36,7 @@ SECURITY_COLUMN_MAP = {
 }
 
 
-def get_security_data(secids: set, board: str) -> pd.DataFrame:
+def get_security_data(secids: set[str], board: str) -> pd.DataFrame:
     """Возвращает в табличном виде справочник акций из MOEX ISS."""
     data = get_stock_security(board=board)
     df = pd.DataFrame(
@@ -50,7 +50,7 @@ def get_tbank_uid(df: pd.DataFrame) -> pd.DataFrame:
     """Выгружает из api.tbank.ru технический id инструмента ТБанк "instrument_uid"
     и добавляет его в исходны dateframe."""
     uid_dict: dict[str, str] = {}
-    for isin in df["ISIN"].unique():
+    for isin in df["ISIN"].dropna().unique():
         data = find_instrument(isin)
         instruments = data.get("instruments", [])
 

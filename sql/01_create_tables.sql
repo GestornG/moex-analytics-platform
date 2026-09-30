@@ -16,6 +16,7 @@ CREATE TABLE dwh.security (
     currency_code TEXT,
     security_type_code TEXT,
     list_level SMALLINT,
+    prev_date DATE,
     tbank_uid UUID,
 
     CONSTRAINT pk_security PRIMARY KEY (security_id),
