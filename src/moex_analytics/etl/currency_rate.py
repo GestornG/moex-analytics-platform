@@ -7,7 +7,7 @@ ETL-процесс загрузки получения динамики коти
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import date
 from io import BytesIO
 
 import pandas as pd
@@ -15,7 +15,7 @@ import pandas as pd
 from moex_analytics.api.cb import get_currency_rate
 from moex_analytics.db.read import get_currency_rate_range
 from moex_analytics.db.write import upsert_currency_rate
-from moex_analytics.etl.common import dataframe_to_rows
+from moex_analytics.etl.common import calculate_missing_date_ranges, dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import CBR_CURRENCIES, HISTORY_DATE_FROM, HISTORY_DATE_TO
 
@@ -47,44 +47,18 @@ def get_load_ranges() -> list[tuple[str, int, date, date]]:
     load_ranges: list[tuple[str, int, date, date]] = []
 
     for cbr_id, currency_data in db_range.items():
-        currency_id = currency_data["currency_id"]
-        date_from = currency_data["date_from"]
-        date_to = currency_data["date_to"]
+        ranges = calculate_missing_date_ranges(
+            target_from=HISTORY_DATE_FROM,
+            target_to=HISTORY_DATE_TO,
+            loaded_from=currency_data["date_from"],
+            loaded_to=currency_data["date_to"],
+        )
 
-        if date_from is None or date_to is None:
+        for date_from, date_to in ranges:
             load_ranges.append(
-                (cbr_id, currency_id, HISTORY_DATE_FROM, HISTORY_DATE_TO)
-            )
-            continue
-
-        if date_from <= HISTORY_DATE_FROM and date_to >= HISTORY_DATE_TO:
-            continue
-
-        if HISTORY_DATE_TO < date_from or HISTORY_DATE_FROM > date_to:
-            load_ranges.append(
-                (cbr_id, currency_id, HISTORY_DATE_FROM, HISTORY_DATE_TO)
-            )
-            continue
-
-        if HISTORY_DATE_FROM < date_from:
-            load_ranges.append(
-                (
-                    cbr_id,
-                    currency_id,
-                    HISTORY_DATE_FROM,
-                    date_from - timedelta(days=1),
-                )
+                (cbr_id, currency_data["currency_id"], date_from, date_to)
             )
 
-        if HISTORY_DATE_TO > date_to:
-            load_ranges.append(
-                (
-                    cbr_id,
-                    currency_id,
-                    date_to + timedelta(days=1),
-                    HISTORY_DATE_TO,
-                )
-            )
     return load_ranges
 
 

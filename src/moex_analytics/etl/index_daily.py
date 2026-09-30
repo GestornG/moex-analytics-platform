@@ -8,14 +8,14 @@ ETL-процесс загрузки дневной истории индексо
 
 import logging
 import time
-from datetime import date, timedelta
+from datetime import date
 
 import pandas as pd
 
 from moex_analytics.api.moex import get_index_daily_history
 from moex_analytics.db.read import get_index_available_range, get_index_daily_date_range
 from moex_analytics.db.write import upsert_index_daily
-from moex_analytics.etl.common import dataframe_to_rows
+from moex_analytics.etl.common import calculate_missing_date_ranges, dataframe_to_rows
 from moex_analytics.logging_config import setup_logging
 from moex_analytics.settings import HISTORY_DATE_FROM, HISTORY_DATE_TO, SELECTED_INDICES
 
@@ -61,39 +61,16 @@ def get_index_daily_load_ranges() -> list[tuple[int, str, date, date]]:
         target_from = max(HISTORY_DATE_FROM, db_index[index_id]["analytics_from"])
         target_to = min(HISTORY_DATE_TO, db_index[index_id]["analytics_till"])
 
-        if target_from > target_to:
-            continue
+        ranges = calculate_missing_date_ranges(
+            target_from=target_from,
+            target_to=target_to,
+            loaded_from=row["min_date"],
+            loaded_to=row["max_date"],
+        )
 
-        if row["min_date"] is None or row["max_date"] is None:
-            load_ranges.append((index_id, index_code, target_from, target_to))
-            continue
+        for date_from, date_to in ranges:
+            load_ranges.append((index_id, index_code, date_from, date_to))
 
-        if row["min_date"] <= target_from and row["max_date"] >= target_to:
-            continue
-
-        if target_to < row["min_date"] or target_from > row["max_date"]:
-            load_ranges.append((index_id, index_code, target_from, target_to))
-            continue
-
-        if target_from < row["min_date"]:
-            load_ranges.append(
-                (
-                    index_id,
-                    index_code,
-                    target_from,
-                    row["min_date"] - timedelta(days=1),
-                )
-            )
-
-        if target_to > row["max_date"]:
-            load_ranges.append(
-                (
-                    index_id,
-                    index_code,
-                    row["max_date"] + timedelta(days=1),
-                    target_to,
-                )
-            )
     return load_ranges
 
 
