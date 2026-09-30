@@ -8,6 +8,7 @@ ETL-процесс загрузки получения динамики коти
 
 import logging
 from datetime import date
+from decimal import Decimal
 from io import BytesIO
 
 import pandas as pd
@@ -92,8 +93,8 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df["currency_id"] = df["currency_id"].astype("Int64")
     df["nominal"] = df["nominal"].astype("Int64")
     df["rate_date"] = pd.to_datetime(df["rate_date"], format="%d.%m.%Y").dt.date
-    df["rate_value"] = df["rate_value"].str.replace(",", ".", regex=False).astype(float)
-    df["unit_rate"] = df["unit_rate"].str.replace(",", ".", regex=False).astype(float)
+    df["rate_value"] = df["rate_value"].str.replace(",", ".", regex=False).map(Decimal)
+    df["unit_rate"] = df["unit_rate"].str.replace(",", ".", regex=False).map(Decimal)
     return df
 
 
