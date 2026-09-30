@@ -124,13 +124,6 @@ WHERE
 """
 
 
-def get_securitys_from_db():
-    """Возвращает перечень уникальных наименований акций из таблицы dwh.security."""
-    with get_connection() as connection:
-        rows = connection.execute("SELECT DISTINCT(secid) FROM dwh.security").fetchall()
-    return {secid for (secid,) in rows}
-
-
 def get_security_daily_date_range(security: list[str]) -> list[dict[str, Any]]:
     """Возвращает перечень акций по списку и указывает диапазон имеющихся в БД дат."""
     if not security:
