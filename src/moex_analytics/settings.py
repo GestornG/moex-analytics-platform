@@ -1,5 +1,6 @@
 import os
 import tomllib
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,6 +22,10 @@ CBR_CURRENCIES = scope["cbr"]["currencies"]
 
 HISTORY_DATE_FROM = scope["history"]["date_from"]
 HISTORY_DATE_TO = scope["history"]["date_to"]
+if HISTORY_DATE_TO == "yesterday":
+    HISTORY_DATE_TO = (
+        datetime.now(tz=timezone(timedelta(hours=10))) - timedelta(days=1)
+    ).date()
 
 
 # PostgreSQL
