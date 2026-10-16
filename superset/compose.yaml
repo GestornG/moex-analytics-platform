@@ -1,0 +1,32 @@
+name: moex-superset
+
+services:
+  superset:
+    build: .
+    image: moex-superset:6.1.0
+    container_name: moex-superset
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+
+    ports:
+      - "127.0.0.1:8088:8088"
+
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py:ro
+      - superset_home:/app/superset_home
+
+    networks:
+      - moex_network
+
+networks:
+  moex_network:
+    external: true
+    name: moex-analytics-platform_default
+
+volumes:
+  superset_home:
