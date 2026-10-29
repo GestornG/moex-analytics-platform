@@ -1,0 +1,5 @@
+table,source_table,source_field,source_type,db_column,db_type,key,nullable,decision,calculation_rule,description
+v_split_factors,dwh.split,security_id,bigint,security_id,bigint,-,NO,keep,copy,Внутренний идентификатор акции из dwh.security
+v_split_factors,dwh.split,trade_date,date,date_from,date,-,YES,calculate,LAG(trade_date) OVER (PARTITION BY security_id ORDER BY trade_date),Начало периода включительно; NULL для первого периода
+v_split_factors,dwh.split,trade_date,date,date_to,date,-,NO,rename,trade_date,Конец периода исключительно; дата корпоративного события
+v_split_factors,dwh.split,"ratio_before, ratio_after",numeric,split_factor,numeric,-,NO,calculate,Произведение ratio_before / ratio_after для текущего и всех последующих событий акции,Накопленный коэффициент корректировки исторических цен
